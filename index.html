@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Pulse - Visualizer Musik</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            color: white;
+            font-family: 'Inter', sans-serif;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #controls {
+            transition: opacity 0.3s ease;
+        }
+        #controls.hidden-ui {
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="visualizer"></canvas>
+
+    <div id="controls" class="fixed inset-0 flex flex-col items-center justify-center z-10 p-6">
+        <div class="glass p-8 rounded-3xl max-w-md w-full text-center space-y-6 shadow-2xl border border-white/10">
+            <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-500">
+                Neon Pulse
+            </h1>
+            <p class="text-gray-400 text-sm">
+                Pilih sumber audio untuk memulai visualisasi.
+            </p>
+
+            <div class="grid grid-cols-1 gap-3">
+                <button id="systemBtn" class="flex items-center justify-between p-4 rounded-xl glass hover:bg-white/10 transition-all group border border-blue-500/30">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/40 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <div class="text-left">
+                            <span class="block font-medium">Audio Sistem</span>
+                            <span class="block text-[10px] text-gray-400 italic">Spotify, YouTube, Desktop</span>
+                        </div>
+                    </div>
+                </button>
+
+                <button id="micBtn" class="flex items-center justify-between p-4 rounded-xl glass hover:bg-white/10 transition-all group border border-purple-500/20">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-purple-500/20 rounded-lg group-hover:bg-purple-500/40 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                            </svg>
+                        </div>
+                        <span class="font-medium text-left">Gunakan Mikrofon</span>
+                    </div>
+                </button>
+
+                <div class="relative group">
+                    <input type="file" id="fileInput" accept="audio/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20">
+                    <div class="flex items-center justify-between p-4 rounded-xl glass group-hover:bg-white/10 transition-all border border-pink-500/20">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-pink-500/20 rounded-lg group-hover:bg-pink-500/40 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                                </svg>
+                            </div>
+                            <span class="font-medium text-left">Pilih File MP3</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-2 p-3 bg-blue-500/10 rounded-xl border border-blue-500/20">
+                <p class="text-[11px] text-blue-300 font-semibold uppercase">Instruksi Audio Sistem:</p>
+                <p class="text-[10px] text-gray-400 leading-relaxed">
+                    1. Klik "Audio Sistem"<br>
+                    2. Pilih "Tab Browser" atau "Seluruh Layar"<br>
+                    3. <span class="text-white underline">Penting:</span> Centang <b>"Bagikan audio sistem"</b> di bawah pilihan layar.<br>
+                    4. Klik tombol Biru "Bagikan".
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div id="hud" class="fixed bottom-6 left-6 z-20 opacity-0 transition-opacity duration-500 pointer-events-none">
+        <div class="glass px-4 py-2 rounded-full flex items-center gap-3">
+            <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span id="statusLabel" class="text-xs font-mono uppercase tracking-tighter text-white">Aktif</span>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+        const controls = document.getElementById('controls');
+        const hud = document.getElementById('hud');
+        const statusLabel = document.getElementById('statusLabel');
+        const micBtn = document.getElementById('micBtn');
+        const systemBtn = document.getElementById('systemBtn');
+        const fileInput = document.getElementById('fileInput');
+
+        let audioCtx, analyser, source, dataArray, animationId;
+        let isSetup = false;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        async function initAudio(type, file = null) {
+            try {
+                if (audioCtx) audioCtx.close();
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 512;
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+                if (type === 'mic') {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    source = audioCtx.createMediaStreamSource(stream);
+                    source.connect(analyser);
+                    statusLabel.innerText = "Mode: Mikrofon";
+                } 
+                else if (type === 'system') {
+                    if (!navigator.mediaDevices.getDisplayMedia) {
+                        throw new Error("Browser Anda tidak mendukung tangkapan audio sistem.");
+                    }
+
+                    const stream = await navigator.mediaDevices.getDisplayMedia({ 
+                        video: true,
+                        audio: {
+                            echoCancellation: false,
+                            noiseSuppression: false
+                        } 
+                    });
+
+                    const audioTracks = stream.getAudioTracks();
+                    if (audioTracks.length === 0) {
+                        stream.getTracks().forEach(t => t.stop());
+                        throw new Error("Kotak 'Bagikan audio sistem' tidak dicentang.");
+                    }
+
+                    stream.getVideoTracks().forEach(t => t.stop());
+
+                    source = audioCtx.createMediaStreamSource(stream);
+                    source.connect(analyser);
+                    statusLabel.innerText = "Mode: Audio Sistem";
+                }
+                else if (type === 'file' && file) {
+                    const audio = new Audio();
+                    audio.src = URL.createObjectURL(file);
+                    audio.crossOrigin = "anonymous";
+                    source = audioCtx.createMediaElementSource(audio);
+                    source.connect(analyser);
+                    analyser.connect(audioCtx.destination);
+                    audio.play();
+                    statusLabel.innerText = `Lagu: ${file.name}`;
+                }
+
+                isSetup = true;
+                controls.classList.add('hidden-ui');
+                hud.classList.remove('opacity-0');
+                draw();
+            } catch (err) {
+                console.error(err);
+                let message = "Akses ditolak.";
+                if (err.name === "NotAllowedError") message = "Akses dibatalkan atau izin ditolak.";
+                if (err.message.includes("dicentang")) message = err.message;
+                showError(message);
+            }
+        }
+
+        function draw() {
+            animationId = requestAnimationFrame(draw);
+            analyser.getByteFrequencyData(dataArray);
+
+            ctx.fillStyle = 'rgba(5, 5, 5, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) * 0.35;
+
+            let sum = 0;
+            for(let i = 0; i < 30; i++) sum += dataArray[i];
+            const pulse = (sum / 30 / 255) * 70;
+
+            const barCount = 120;
+            for (let i = 0; i < barCount; i++) {
+                const dataIndex = Math.floor((i / barCount) * (dataArray.length * 0.7));
+                const val = dataArray[dataIndex];
+                const barHeight = (val / 255) * (radius * 1.5) + 2;
+                const angle = (i * (360 / barCount)) * (Math.PI / 180);
+
+                const xStart = centerX + Math.cos(angle) * (radius + pulse);
+                const yStart = centerY + Math.sin(angle) * (radius + pulse);
+                const xEnd = centerX + Math.cos(angle) * (radius + pulse + barHeight);
+                const yEnd = centerY + Math.sin(angle) * (radius + pulse + barHeight);
+
+                ctx.strokeStyle = `hsla(${(i/barCount)*360}, 80%, 60%, 0.8)`;
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(xStart, yStart);
+                ctx.lineTo(xEnd, yEnd);
+                ctx.stroke();
+            }
+        }
+
+        micBtn.addEventListener('click', () => initAudio('mic'));
+        systemBtn.addEventListener('click', () => initAudio('system'));
+        fileInput.addEventListener('change', (e) => e.target.files[0] && initAudio('file', e.target.files[0]));
+
+        window.addEventListener('click', (e) => {
+            if (isSetup && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
+                controls.classList.toggle('hidden-ui');
+            }
+        });
+
+        function showError(msg) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = "fixed top-10 left-1/2 -translate-x-1/2 glass px-6 py-4 rounded-2xl text-red-400 text-sm z-50 shadow-2xl border border-red-500/30 text-center max-w-xs";
+            errorDiv.innerHTML = `<b>Error:</b><br>${msg}`;
+            document.body.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+    </script>
+</body>
+</html>
